@@ -12,6 +12,9 @@ class Config(object):
     SECRET_KEY = secrets.token_urlsafe(255)
     SESSION_COOKIE_SECURE = True
 
+    @staticmethod
+    def init_app(app):
+        pass
 
 class ProductionConfig(Config):
     pass
@@ -31,3 +34,10 @@ class TestingConfig(Config):
     DB_USERNAME = "admin"
     DB_PASSWORD = "example"
     SESSION_COOKIE_SECURE = False
+
+
+config = {
+  'testing': TestingConfig,
+  'production': ProductionConfig,
+  'default': DevelopmentConfig,
+}
