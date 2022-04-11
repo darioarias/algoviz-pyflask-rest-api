@@ -9,7 +9,7 @@ def index():
     filename = os.path.join(app.static_folder, 'json', 'about.json')
     with open(filename) as about_json:
         data = json.load(about_json)
-    return data
+    return data, 200
 
 # not found error handler
 @main.errorhandler(404)
