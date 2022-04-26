@@ -1,14 +1,12 @@
 import secrets
+import os
 
 class Config(object):
     DEBUG = False
     TESTING = False
-    SECRET_KEY = ""
-    DB_HOST = ""
-    DB_NAME = ""
-    DB_USER = ""
-    DB_PASSWORD = ""
     
+    SQLALCHEMY_DATABASE_URI = os.environ.get("SQLALCHEMY_DATABASE_URI")
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = secrets.token_urlsafe(255)
     SESSION_COOKIE_SECURE = True
 

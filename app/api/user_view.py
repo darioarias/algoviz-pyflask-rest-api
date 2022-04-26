@@ -1,6 +1,23 @@
 from . import api
-from flask import jsonify, request, json, g
-from app.dbms import Queries as query
+from flask import jsonify, request, json, g, url_for
+# from app.dbms import Queries as query
+from .models import User
+from app import db
+
+#TODO: Abstract this logic into module
+def query_chain(Model, PK_key: int = None, Count: int = None):
+  if(Model is None):
+    raise Exception('Model must be provided')
+
+  query = db.session.query(Model)
+
+  if PK_key is not None:
+    query = query.filter(Model.id == PK_key)
+  
+  if Count is not None:
+    query = query.limit(Count)
+  
+  return query
 
 # Create
 @api.route('/user/', methods=['POST'])
@@ -10,20 +27,42 @@ def create_user():
 # Read
 @api.route('/users/', methods=['GET'])
 def read_users():
-    cur = g.db_connection.cursor()
-    cur.execute(query.get_all_users())
-    users = cur.fetchall()
-    cur.close()
-    return jsonify(users)
-    # return jsonify({"message": "all courses end-point", "status": 200})
+  # users = db.session.query(User)
+  users = query_chain(Model = User)
+
+  users_list = []
+  for user in users:
+    users_list.append(
+      {
+        'id': user.id, 
+        'username': user.user_name, 
+        'email': user.email, 
+        'First Name': user.first_name, 
+        'Last Name':user.last_name, 
+        'Joined Date':user.joined_date, 
+        'Last Logged In': user.last_visited
+        }
+      )
+  return jsonify(users_list)
+
 
 @api.route('/user/<id>', methods=['GET'])
 def read_user(id):
-    cur = g.db_connection.cursor()
-    cur.execute(query.get_user_by_id(id))
-    users = cur.fetchall()
-    return jsonify(users)
-    return jsonify({"message": "Get user by id end-point", "status": 200})
+  user = query_chain(Model=User, PK_key=id).first_or_404()
+  for attempt in user.attempts_collection:
+    print(url_for('api.read_challenge', id=attempt.challenge_id, _external=True))
+
+  return jsonify(
+    [{
+      'id': user.id, 
+      'username': user.user_name, 
+      'email': user.email, 
+      'First Name': user.first_name, 
+      'Last Name':user.last_name, 
+      'Joined Date':user.joined_date, 
+      'Last Logged In': user.last_visited
+      }]
+    )
 
 # Update
 @api.route('/user/<id>', methods=["PUT", "PATCH"])
