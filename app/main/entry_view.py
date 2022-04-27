@@ -12,15 +12,9 @@ def index():
             "code": 200
         }
     )
-    # filename = os.path.join(app.static_folder, 'json', 'about.json')
-    # with open(filename) as about_json:
-    #     data = json.load(about_json)
-    # return data, 200
-
-
 
 # not found error handler
 @main.errorhandler(404)
 def content_not_found(e):
     print(e)
-    return jsonify({"message": "content not found, go to '/' for a full description of endpoints", "code": 404})
+    return jsonify({"message": "content not found, go to '/' for a full description of endpoints", "code": 404}), 404

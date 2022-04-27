@@ -3,9 +3,8 @@ from flask_cors import CORS
 
 api = Blueprint('api', __name__)
 CORS(api)
-# from . import challenge_view, course_view, user_view, middlewares
-# from . import course_view, middlewares
-from . import attempts_view, challenges_view, courses_view, user_view, error_handlers, enrolled_view, entry_view
+
+from . import attempts_view, challenges_view, courses_view, error_handlers, enrolled_view, entry_view, users_view
 # from app import db
 # from .models import User
 

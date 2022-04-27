@@ -1,6 +1,5 @@
 from . import api
 from flask import jsonify, request, json, g, url_for
-# from app.dbms import Queries as query
 from .models import User
 from app import db
 

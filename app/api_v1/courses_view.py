@@ -1,14 +1,8 @@
 from . import api
-from flask import jsonify, request, json, g, abort, Response, redirect, url_for
+from flask import jsonify, request, json, abort, Response, redirect, url_for
 from .models import Course
 from app import db
 from sqlalchemy.exc import IntegrityError, DatabaseError
-# from datetime import datetime
-# from app.dbms import Queries as query
-# from app.dbms import DBMS as query
-# from sqlalchemy import select
-# from .models import Courses
-# from .models import User, Attempt, Challenge, Course, 
 
 #TODO: Abstract this logic into module
 def query_chain(Model, PK_key: int = None, Count: int = None):
@@ -44,8 +38,6 @@ def model_course(resource: object):
 
   if not entry['title'] or not entry['description']:
     abort_request(message="course title and description must be provided", code=400)
-    # abort(Response(json.dumps({"message": "course title and description must be provided", 'code': 400}), status=400, content_type='application/json')) #400, description = {'message': 'course title and description must be provided'}
-    #400, jsonify(message = 'course title and description must be provided')
   
   if(entry['url']):
     newCourse = Course(title=entry['title'], course_url=entry['url'], course_description=entry['description']);
