@@ -37,10 +37,10 @@ def read_users():
         'id': user.id, 
         'username': user.user_name, 
         'email': user.email, 
-        'First Name': user.first_name, 
-        'Last Name':user.last_name, 
-        'Joined Date':user.joined_date, 
-        'Last Logged In': user.last_visited
+        'first_name': user.first_name, 
+        'last_name':user.last_name, 
+        'joined_date':user.joined_date, 
+        'last_seen': user.last_visited
         }
       )
   return jsonify(users_list)
@@ -57,10 +57,10 @@ def read_user(id):
       'id': user.id, 
       'username': user.user_name, 
       'email': user.email, 
-      'First Name': user.first_name, 
-      'Last Name':user.last_name, 
-      'Joined Date':user.joined_date, 
-      'Last Logged In': user.last_visited
+      'first_name': user.first_name, 
+      'last_name':user.last_name, 
+      'joined_date':user.joined_date, 
+      'last_seen': user.last_visited
       }]
     )
 
