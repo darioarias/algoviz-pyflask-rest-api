@@ -62,16 +62,6 @@ class Attempt(Base):
       'user_id': self.user_id,
       'challenge_id': self.challenge_id
     }
-    """
-    {
-      'id': attempt.id, 
-      'answer': attempt.attempt_answer, 
-      'score': attempt.attemp_score, 
-      'submittion_date': attempt.attempted_on, 
-      'submitted_by': url_for('api.read_user', id=attempt.user_id, _external=True),#attempt.user_id, 
-      'challenge_id': attempt.challenge_id, 
-    }
-    """
 
 class Enrollment(Base):
   __tablename__ = 'enrollments'

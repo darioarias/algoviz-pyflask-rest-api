@@ -37,7 +37,7 @@ def create_user():
     abort_request(message="Unable to create User", code=500, details=error.orig.diag.message_detail)
   finally:
     db.session.rollback()
-  return redirect(url_for('api.read_user', id=user.id), code=201)
+  return redirect(url_for('api.read_user', id=user.id))
 
 # Read
 @api.route('/users/', methods=['GET'])
@@ -109,4 +109,5 @@ def delete_user(id):
   finally:
     db.session.rollback();
 
-  return redirect(url_for('api.read_users'))
+  # return redirect(url_for('api.read_users'))
+  return jsonify({'message': "user deleted"})
