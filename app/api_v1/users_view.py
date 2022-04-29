@@ -1,7 +1,9 @@
 from . import api
-from flask import jsonify, request, json, g, url_for
-from .models import User
+from flask import jsonify, request, json, g, url_for, redirect, request
+from .route_controls import abort_request
+from app.models import User
 from app import db
+from sqlalchemy.exc import IntegrityError
 
 #TODO: Abstract this logic into module
 def query_chain(Model, PK_key: int = None, Count: int = None):
@@ -19,60 +21,92 @@ def query_chain(Model, PK_key: int = None, Count: int = None):
   return query
 
 # Create
-@api.route('/user/', methods=['POST'])
+@api.route('/users/', methods=['POST'])
 def create_user():
-    return jsonify({"message": "Post user end-point", "status": 200})
+  user = User(
+    username=request.json.get('username' or ''), 
+    email=request.json.get('email' or ''), 
+    password=request.json.get('password' or ''),
+    first_name=request.json.get('first_name' or ''),
+    last_name=request.json.get('last_name' or ''),
+  )
+  try:
+    db.session.add(user)
+    db.session.commit()
+  except IntegrityError as error:
+    abort_request(message="Unable to create User", code=500, details=error.orig.diag.message_detail)
+  finally:
+    db.session.rollback()
+  return redirect(url_for('api.read_user', id=user.id), code=201)
 
 # Read
 @api.route('/users/', methods=['GET'])
 def read_users():
-  # users = db.session.query(User)
   users = query_chain(Model = User)
-
   users_list = []
   for user in users:
-    users_list.append(
-      {
-        'id': user.id, 
-        'username': user.user_name, 
-        'email': user.email, 
-        'first_name': user.first_name, 
-        'last_name':user.last_name, 
-        'joined_date':user.joined_date, 
-        'last_seen': user.last_visited
-        }
-      )
+    users_list.append(user.to_json())
   return jsonify(users_list)
 
-
-@api.route('/user/<id>', methods=['GET'])
+@api.route('/users/<int:id>', methods=['GET'])
 def read_user(id):
   user = query_chain(Model=User, PK_key=id).first_or_404()
-  for attempt in user.attempts_collection:
-    print(url_for('api.read_challenge', id=attempt.challenge_id, _external=True))
-
-  return jsonify(
-    [{
-      'id': user.id, 
-      'username': user.user_name, 
-      'email': user.email, 
-      'first_name': user.first_name, 
-      'last_name':user.last_name, 
-      'joined_date':user.joined_date, 
-      'last_seen': user.last_visited
-      }]
-    )
+  return jsonify([user.to_json()])
 
 # Update
-@api.route('/user/<id>', methods=["PUT", "PATCH"])
+@api.route('/users/<int:id>', methods=["PUT", "PATCH"])
 def update_user(id):
+  user = query_chain(Model=User, PK_key=id).first()
+  code = 200
   if request.method == "PUT":
-    return jsonify({"message": "Update via PUT user by id end-point", "status": 200})
-  
+    if user is None:
+      user = User(
+        username=request.json.get('username', None), 
+        email=request.json.get('email', None), 
+        password=request.json.get('password', None),
+        first_name=request.json.get('first_name', None),
+        last_name=request.json.get('last_name', None),
+      )
+      code = 201
+      db.session.add(user)
+    else:
+      user.username = request.json.get('username', None)
+      user.email = request.json.get('email', None)
+      user.password = request.json.get('password', None)
+      user.first_name = request.json.get('first_name', None)
+      user.last_name = request.json.get('last_name', None)
+
   if request.method == "PATCH":
-    return jsonify({"message": "Update via PATCH user by id end-point", "status": 200})
+    if user is None:
+      abort_request(message="User does not exits", code=400)
+    
+    user.username = request.json.get('username', user.username)
+    user.email = request.json.get('email', user.email)
+    user.password = request.json.get('password', user.password)
+    user.first_name = request.json.get('first_name', user.first_name)
+    user.last_name = request.json.get('last_name', user.last_name)
+
+  try:
+    db.session.commit()
+  except IntegrityError as error:
+    abort_request('Unable to update user', details=error.orig.diag.message_detail)
+  finally:
+    db.session.rollback()
+  return redirect(url_for('api.read_user', id=user.id), code=code)
 
 # Delete
-@api.route('/user/<id>', methods=["DELETE"])
+@api.route('/users/<int:id>', methods=["DELETE"])
 def delete_user(id):
-    return jsonify({"message": "DELETE user by id end-point", "status": 200})
+  user = query_chain(Model=User, PK_key=id).first()
+  if user is None:
+    abort_request(message="User does not exits", code=400)
+  
+  try:
+    db.session.delete(user)
+    db.session.commit()
+  except IntegrityError as error:
+    abort_request('Unable to delete user', code=500, details=error.orig.diag.message_detail)
+  finally:
+    db.session.rollback();
+
+  return redirect(url_for('api.read_users'))

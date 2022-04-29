@@ -3,3 +3,5 @@
 help.txt
 **/venv
 start_app.zsh
+act_env_run.zsh
+main_test.py

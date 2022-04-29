@@ -1,8 +1,10 @@
-from flask import jsonify, request
+from flask import jsonify, redirect, request
+from .route_controls import abort_request
 from . import api
 from app import db
-from .models import Challenge
+from app.models import Challenge
 from flask import url_for
+from sqlalchemy.exc import IntegrityError
 
 #TODO: Abstract this logic into module
 def query_chain(Model, PK_key: int = None, Count: int = None):
@@ -19,12 +21,23 @@ def query_chain(Model, PK_key: int = None, Count: int = None):
   
   return query
 
-
 # Create
-@api.route('/challenge/', methods=["POST"])
+@api.route('/challenges/', methods=["POST"])
 def create_challenges():
-  return jsonify({"message": "Post challenges end-point", "status": 200})
-
+  challenge = Challenge(
+    title = request.json.get('title', None),
+    course_id = request.json.get('course_id', None),
+    description = request.json.get('description', None)
+  )
+  try:
+    db.session.add(challenge)
+    db.session.commit()
+  except IntegrityError as error:
+    print(error.orig.diag)
+    abort_request('Unable to create challenge', code=500, details=error.orig.diag.message_detail)
+  finally:
+    db.session.rollback()
+  return redirect(url_for('api.read_challenge', id=challenge.id), code=201)
 
 # Read
 @api.route('/challenges/', methods=["GET"])
@@ -32,43 +45,58 @@ def read_challenges():
   challenges = query_chain(Model=Challenge)
   challenges_list = []
   for challenge in challenges:
-    challenges_list.append(
-      {
-        'id': challenge.id,
-        'title': challenge.title,
-        'parent_course': url_for('api.read_course', id=challenge.course_id, _external=True), #challenge.course_id
-        'parent_id': challenge.course_id,
-        'description': challenge.description
-      }
-    )
+    challenges_list.append(challenge.to_json())
   return jsonify(challenges_list)
 
-@api.route('/challenge/<int:id>', methods=["GET"])
+@api.route('/challenges/<int:id>', methods=["GET"])
 def read_challenge(id):
   challenge = query_chain(Model=Challenge, PK_key=id).first_or_404()
-
-  return jsonify([
-    {
-      'id': challenge.id,
-      'title': challenge.title,
-      'parent_course': url_for('api.read_course', id=challenge.course_id, _external=True),
-      'parent_id': challenge.course_id,
-      'description': challenge.description
-    }
-  ])
-
+  return jsonify([challenge.to_json()])
 
 # Update
-@api.route('/challenge/<id>',  methods=["PUT", "PATCH"])
+@api.route('/challenges/<int:id>',  methods=["PUT", "PATCH"])
 def update_challenge(id):
+  challenge = query_chain(Model=Challenge, PK_key=id).first()
+  code = 200
   if request.method == "PUT":
-    return jsonify({"message": "Update via PUT challenge by id end-point", "status": 200})
+    code = 201
+    if challenge is None:
+      challenge = Challenge(
+        title=request.json.get('title', None),
+        course_id=request.json.get('course_id', None),
+        description=request.json.get('description', None)
+      )
+      db.session.add(challenge)
+    else:
+      challenge.title = request.json.get('title', None)
+      challenge.course_id = request.json.get('course_id', None)
+      challenge.description = request.json.get('description', None)
   
   if request.method == "PATCH":
-    return jsonify({"message": "Update via PATCH challenge by id end-point", "status": 200})
+    if challenge is None:
+      abort_request(message="Challenge does not exists", code=400)
+    challenge.title = request.json.get('title', challenge.title)
+    challenge.course_id = request.json.get('course_id', challenge.course_id)
+    challenge.description = request.json.get('description', challenge.description)
 
+  try:
+    db.session.commit()
+  except IntegrityError as error:
+    abort_request(message="Unable to update Challenges", code=500, details=error.orig.diag.message_detail)
+  finally:
+    db.session.rollback()
+  return redirect(url_for('api.read_challenge', id=challenge.id), code=code)
 
 # Delete
-@api.route('/challenges/<id>', methods=["DELETE"])
+@api.route('/challenges/<int:id>', methods=["DELETE"])
 def delete_challenges(id):
-  return jsonify({"message": "DELETE challenge by id end-point", "status": 200})
+  challenge = query_chain(Model=Challenge, PK_key=id).first()
+  if challenge is None:
+    abort_request(message='Challenge does not exits', code=400)
+  try:
+    db.session.delete(challenge)
+    db.session.commit()
+  except IntegrityError as error:
+    abort_request(message="Unable to delete challenege", code=500, details=error.orig.diag.message_detail)
+    
+  return redirect(url_for('api.read_challenges'))
