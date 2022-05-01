@@ -8,7 +8,7 @@ from . import main
 def index():
     return jsonify(
         {
-            "message": f'welcome to algoViz API, go to this link for version 1 of the API. Link: {url_for("api.index", _external=True)}',
+            "message": f'welcome to algoViz API, go to this link for version 1 of the API. Link: {url_for("api_v1.index", _external=True)}',
             "code": 200
         }
     )

@@ -1,46 +1,44 @@
-from . import api
+from . import api_v1
 from flask import jsonify, request, json, g, url_for, redirect, request
-from .route_controls import abort_request
+from .route_controls import abort_request, query_chain
 from app.models import User
 from app import db
 from sqlalchemy.exc import IntegrityError
-
-#TODO: Abstract this logic into module
-def query_chain(Model, PK_key: int = None, Count: int = None):
-  if(Model is None):
-    raise Exception('Model must be provided')
-
-  query = db.session.query(Model)
-
-  if PK_key is not None:
-    query = query.filter(Model.id == PK_key)
-  
-  if Count is not None:
-    query = query.limit(Count)
-  
-  return query
+from app.email import send_email
 
 # Create
-@api.route('/users/', methods=['POST'])
+@api_v1.route('/users/', methods=['POST'])
 def create_user():
+  if 'password' in request.json:
+    request.json['password'] = User.generate_hash(request.json['password'])
+
   user = User(
-    username=request.json.get('username' or ''), 
-    email=request.json.get('email' or ''), 
-    password=request.json.get('password' or ''),
-    first_name=request.json.get('first_name' or ''),
-    last_name=request.json.get('last_name' or ''),
+    username=request.json.get('username', None),
+    email=request.json.get('email', None),
+    password=request.json.get('password', None),
+    first_name=request.json.get('first_name', None),
+    last_name=request.json.get('last_name', None)
   )
+  
   try:
     db.session.add(user)
     db.session.commit()
+    send_email(
+      user.email, 
+      'Confirm Account', 
+      'email/confirm', 
+      user=user, 
+      token=user.generate_verification_token(user.username)
+    )
   except IntegrityError as error:
     abort_request(message="Unable to create User", code=500, details=error.orig.diag.message_detail)
   finally:
     db.session.rollback()
-  return redirect(url_for('api.read_user', id=user.id))
+  return redirect(url_for('api_v1.read_user', id=user.id))
 
 # Read
-@api.route('/users/', methods=['GET'])
+@api_v1.route('/users/', methods=['GET'])
+
 def read_users():
   users = query_chain(Model = User)
   users_list = []
@@ -48,13 +46,20 @@ def read_users():
     users_list.append(user.to_json())
   return jsonify(users_list)
 
-@api.route('/users/<int:id>', methods=['GET'])
+@api_v1.route('/users/<int:id>', methods=['GET'])
 def read_user(id):
   user = query_chain(Model=User, PK_key=id).first_or_404()
+  # TESTING EMAIL SENDING
+  # send_email('pepelope8@gmail.com', 'Confirm account', 'email/confirm', user=user, token='someHash')
+  
+  t = User.find_by_username('d_arias')
+  print(t.password if t is not None else " method not working")
+
+  # END TEST
   return jsonify([user.to_json()])
 
 # Update
-@api.route('/users/<int:id>', methods=["PUT", "PATCH"])
+@api_v1.route('/users/<int:id>', methods=["PUT", "PATCH"])
 def update_user(id):
   user = query_chain(Model=User, PK_key=id).first()
   code = 200
@@ -92,10 +97,10 @@ def update_user(id):
     abort_request('Unable to update user', details=error.orig.diag.message_detail)
   finally:
     db.session.rollback()
-  return redirect(url_for('api.read_user', id=user.id), code=code)
+  return redirect(url_for('api_v1.read_user', id=user.id), code=code)
 
 # Delete
-@api.route('/users/<int:id>', methods=["DELETE"])
+@api_v1.route('/users/<int:id>', methods=["DELETE"])
 def delete_user(id):
   user = query_chain(Model=User, PK_key=id).first()
   if user is None:
@@ -109,5 +114,5 @@ def delete_user(id):
   finally:
     db.session.rollback();
 
-  # return redirect(url_for('api.read_users'))
+  # return redirect(url_for('api_v1.read_users'))
   return jsonify({'message': "user deleted"})

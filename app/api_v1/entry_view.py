@@ -1,14 +1,14 @@
-from . import api
+from . import api_v1
 from flask import jsonify, url_for
 
-@api.route('/')
+@api_v1.route('/')
 def index():
   return jsonify({
     "message": "server is running.",
     "status": 200,
     "features": [
         {
-          "endpoint": f'{url_for("api.read_courses", _external=True)}',
+          "endpoint": f'{url_for("api_v1.read_courses", _external=True)}',
           "description": "endpoint for all courses",
           "methods": ["GET"]
         },
@@ -18,13 +18,13 @@ def index():
               "params": [
                 { "id": "Id of course when deleting, updating or getting a course" }
               ],
-              "GET-example": f'{url_for("api.read_course", id=123, _external=True)}'
+              "GET-example": f'{url_for("api_v1.read_course", id=123, _external=True)}'
         },
         "description": "endpoint to update, create, and delete a course",
         "methods": ["GET", "POST", "PUT", "PATCH", "DELETE"]
         },
         {
-        "endpoint": f'{url_for("api.read_challenges", _external=True)}',
+        "endpoint": f'{url_for("api_v1.read_challenges", _external=True)}',
         "description": "endpoint for all challenges",
         "methods": ["GET"]
         },
@@ -35,13 +35,13 @@ def index():
             {
                 "id": "Id of challenge when deleting, updating or getting a challenge"
             }
-            ], 'GET-example': f'{url_for("api.read_challenge", id=123, _external=True)}',
+            ], 'GET-example': f'{url_for("api_v1.read_challenge", id=123, _external=True)}',
         },
         "description": "endpoint to update, create, and delete a challenge",
         "methods": ["GET", "POST", "PUT", "PATCH", "DELETE"]
         },
         {
-        "endpoint": f'{url_for("api.read_users", _external=True)}',
+        "endpoint": f'{url_for("api_v1.read_users", _external=True)}',
         "description": "endpoint for all users",
         "methods": ["GET"]
         },
@@ -53,7 +53,7 @@ def index():
                 "id": "Id of user when deleting, updating or getting a user"
             }
             ],
-            "GET-example": f'{url_for("api.read_user", id=123, _external=True)}',
+            "GET-example": f'{url_for("api_v1.read_user", id=123, _external=True)}',
         },
         "description": "endpoint to update, create, and delete a user",
         "methods": ["GET", "POST", "PUT", "PATCH", "DELETE"]

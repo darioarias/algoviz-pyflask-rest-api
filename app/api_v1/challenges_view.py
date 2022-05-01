@@ -1,28 +1,15 @@
 from flask import jsonify, redirect, request
-from .route_controls import abort_request
-from . import api
+from .route_controls import abort_request, query_chain
+from . import api_v1
 from app import db
 from app.models import Challenge
 from flask import url_for
 from sqlalchemy.exc import IntegrityError
-
-#TODO: Abstract this logic into module
-def query_chain(Model, PK_key: int = None, Count: int = None):
-  if(Model is None):
-    raise Exception('Model must be provided')
-
-  query = db.session.query(Model)
-
-  if PK_key is not None:
-    query = query.filter(Model.id == PK_key)
-  
-  if Count is not None:
-    query = query.limit(Count)
-  
-  return query
+from flask_jwt_extended import jwt_required
 
 # Create
-@api.route('/challenges/', methods=["POST"])
+@api_v1.route('/challenges/', methods=["POST"])
+@jwt_required()
 def create_challenges():
   challenge = Challenge(
     title = request.json.get('title', None),
@@ -37,10 +24,10 @@ def create_challenges():
     abort_request('Unable to create challenge', code=500, details=error.orig.diag.message_detail)
   finally:
     db.session.rollback()
-  return redirect(url_for('api.read_challenge', id=challenge.id), code=201)
+  return redirect(url_for('api_v1.read_challenge', id=challenge.id), code=201)
 
 # Read
-@api.route('/challenges/', methods=["GET"])
+@api_v1.route('/challenges/', methods=["GET"])
 def read_challenges():
   challenges = query_chain(Model=Challenge)
   challenges_list = []
@@ -48,13 +35,14 @@ def read_challenges():
     challenges_list.append(challenge.to_json())
   return jsonify(challenges_list)
 
-@api.route('/challenges/<int:id>', methods=["GET"])
+@api_v1.route('/challenges/<int:id>', methods=["GET"])
 def read_challenge(id):
   challenge = query_chain(Model=Challenge, PK_key=id).first_or_404()
   return jsonify([challenge.to_json()])
 
 # Update
-@api.route('/challenges/<int:id>',  methods=["PUT", "PATCH"])
+@api_v1.route('/challenges/<int:id>',  methods=["PUT", "PATCH"])
+@jwt_required()
 def update_challenge(id):
   challenge = query_chain(Model=Challenge, PK_key=id).first()
   code = 200
@@ -85,10 +73,11 @@ def update_challenge(id):
     abort_request(message="Unable to update Challenges", code=500, details=error.orig.diag.message_detail)
   finally:
     db.session.rollback()
-  return redirect(url_for('api.read_challenge', id=challenge.id), code=code)
+  return redirect(url_for('api_v1.read_challenge', id=challenge.id), code=code)
 
 # Delete
-@api.route('/challenges/<int:id>', methods=["DELETE"])
+@api_v1.route('/challenges/<int:id>', methods=["DELETE"])
+@jwt_required()
 def delete_challenges(id):
   challenge = query_chain(Model=Challenge, PK_key=id).first()
   if challenge is None:
@@ -99,4 +88,4 @@ def delete_challenges(id):
   except IntegrityError as error:
     abort_request(message="Unable to delete challenege", code=500, details=error.orig.diag.message_detail)
     
-  return redirect(url_for('api.read_challenges'))
+  return redirect(url_for('api_v1.read_challenges'))

@@ -9,6 +9,13 @@ class Config(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = secrets.token_urlsafe(255)
     SESSION_COOKIE_SECURE = True
+    MAIL_SERVER = os.environ.get("MAIL_SERVER", 'smtp.googlemail.com')
+    MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
+    MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", 'true').lower() in ['true', 'on', '1']
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
+    MAIL_SENDER = os.environ.get("MAIL_SENDER", "pepelope8@gmail.com")
+    SECURITY_PASSWORD_SALT="verify"
 
     @staticmethod
     def init_app(app):

@@ -1,27 +1,14 @@
 from app import db
 from app.models import Attempt
 from flask import jsonify, request, url_for, redirect
-from . import api
+from . import api_v1
 from sqlalchemy.exc import IntegrityError
-from .route_controls import abort_request
-
-#TODO: Abstract this logic into module
-def query_chain(Model, PK_key: int = None, Count: int = None):
-  if(Model is None):
-    raise Exception('Model must be provided')
-
-  query = db.session.query(Model)
-
-  if PK_key is not None:
-    query = query.filter(Model.id == PK_key)
-  
-  if Count is not None:
-    query = query.limit(Count)
-  
-  return query
+from .route_controls import abort_request, query_chain
+from flask_jwt_extended import jwt_required
 
 # Create
-@api.route('/attempts/', methods=['POST'])
+@api_v1.route('/attempts/', methods=['POST'])
+@jwt_required()
 def create_attempt():
   attempt = Attempt(
     answer=request.json.get('answer', None),
@@ -40,7 +27,7 @@ def create_attempt():
   return redirect(url_for('.read_attempt', id=attempt.id))
 
 # Read
-@api.route('/attempts/', methods=['GET'])
+@api_v1.route('/attempts/', methods=['GET'])
 def read_attempts():
   attempts = query_chain(Model = Attempt)
   attempts_list = []
@@ -48,14 +35,15 @@ def read_attempts():
     attempts_list.append(attempt.to_json())
   return jsonify(attempts_list)
 
-@api.route('/attempts/<int:id>', methods=['GET'])
+@api_v1.route('/attempts/<int:id>', methods=['GET'])
 def read_attempt(id):
   attempt = query_chain(Model = Attempt, PK_key=id).first_or_404()
   return jsonify([attempt.to_json()])
 
 
 # Update
-@api.route('/attempts/<int:id>', methods=["PUT", "PATCH"])
+@api_v1.route('/attempts/<int:id>', methods=["PUT", "PATCH"])
+@jwt_required()
 def update_attempt(id):
   attempt = query_chain(Model=Attempt, PK_key=id).first()
   if request.method == "PUT":
@@ -90,7 +78,8 @@ def update_attempt(id):
   return redirect(url_for('.read_attempt', id=attempt.id))
 
 # Delete
-@api.route('/attempts/<int:id>', methods=["DELETE"])
+@api_v1.route('/attempts/<int:id>', methods=["DELETE"])
+@jwt_required()
 def delete_attempt(id):
   attempt = query_chain(Model=Attempt, PK_key=id).first()
   if attempt is None:

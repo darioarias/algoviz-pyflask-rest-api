@@ -2,6 +2,6 @@
 **/__pycache__
 help.txt
 **/venv
-start_app.zsh
-act_env_run.zsh
+
+**/scripts
 main_test.py
