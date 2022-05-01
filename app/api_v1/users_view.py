@@ -9,7 +9,7 @@ from flask_jwt_extended import jwt_required
 
 # Create
 @api_v1.route('/users/', methods=['POST'])
-@jwt_required()
+# @jwt_required()
 def create_user():
   if 'password' in request.json:
     request.json['password'] = User.generate_hash(request.json['password'])
