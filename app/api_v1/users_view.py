@@ -5,9 +5,11 @@ from app.models import User
 from app import db
 from sqlalchemy.exc import IntegrityError
 from app.email import send_email
+from flask_jwt_extended import jwt_required
 
 # Create
 @api_v1.route('/users/', methods=['POST'])
+@jwt_required()
 def create_user():
   if 'password' in request.json:
     request.json['password'] = User.generate_hash(request.json['password'])
@@ -60,6 +62,7 @@ def read_user(id):
 
 # Update
 @api_v1.route('/users/<int:id>', methods=["PUT", "PATCH"])
+@jwt_required()
 def update_user(id):
   user = query_chain(Model=User, PK_key=id).first()
   code = 200
@@ -101,6 +104,7 @@ def update_user(id):
 
 # Delete
 @api_v1.route('/users/<int:id>', methods=["DELETE"])
+@jwt_required()
 def delete_user(id):
   user = query_chain(Model=User, PK_key=id).first()
   if user is None:
