@@ -2,7 +2,7 @@
   <p>Greetings {{user.first_name}},</p>
   <p>
     The AlgoVista Team would like to give you warm welcomes. Your journey to
-    mastering Data Structures and Algorithms is a click away from taking off.
+    mastering Data Structures and Algorithms is just a click away.
   </p>
   <p>
     Please take a second to confirm your account. Click
@@ -10,8 +10,9 @@
     to confirm your account.
     <br />
     <br />
-    You can also copy and paste the following link into the browser of your
-    choice. Link: {{url_for('auth.confirm', token=token, _external=True)}}
+    You can also copy and paste the following link into your browser of choice.
+    <br />
+    {{url_for('auth.confirm', token=token, _external=True)}}
   </p>
   <p>
     Sincerely, <br />
