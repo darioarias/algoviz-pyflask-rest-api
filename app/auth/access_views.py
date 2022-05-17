@@ -6,20 +6,21 @@ from flask_jwt_extended import jwt_required
 from app.api_v1.route_controls import abort_request
 from app.email import send_email
 from app import db
+from datetime import timedelta
 
 @auth.route('/signin/', methods=['POST'])
 def signin():
-  user = User.find_by_username(request.json.get('username'))
+  user = User.find_by_username(request.json.get('username', None))
 
   if user is None:
     abort_request(message="User does not exists", code=404)
   
-  if not user.verified:
-    return jsonify({"message": "Account not verified, please check your email and verify your account", "code": 401}), 401
+  # if not user.verified:
+  #   return jsonify({"message": "Account not verified, please check your email and verify your account", "code": 401}), 401
   
   try: 
     if User.verify_hash(request.json.get('password', None), user.password):
-      access_token = create_access_token(identity=request.json['username'])
+      access_token = create_access_token(identity=request.json['username'], expires_delta=timedelta(hours=1))
       return jsonify({'message': f'logged in as {request.json["username"]}', 'access_token': access_token})
     else:
       return jsonify({'message': 'incorrect username or password', 'code': 401}), 401

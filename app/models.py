@@ -67,6 +67,13 @@ class User(Base):
 
   
   def to_json(self):
+    query = db.session.query(Course.title, Enrollment.start_date)
+    query = query.filter(User.id == Enrollment.user_id)
+    query = query.filter(Enrollment.course_id == Course.id)
+    query = query.filter(User.id == self.id)
+
+    format_record = lambda record : {'title': record[0], 'start_date': record[1]}
+
     return {
       "id": self.id,
       "username": self.username,
@@ -77,20 +84,24 @@ class User(Base):
       'joined_date': self.joined_date,
       'last_seen': self.last_seen,
       'verified': self.verified,
-      'url': url_for('api_v1.read_user', id=self.id, _external=True)
+      'url': url_for('api_v1.read_user', username=self.username, _external=True),  #[record for record in db.session.query(self).join(Enrollment)]
+      'courses': [format_record(record) for record in query],
     }
 
 class Course(Base):
   __tablename__ = 'courses'
-
   def to_json(self):
-    course_json = {
+    query = db.session.query(User.username, User.first_name, User.last_name).filter(User.id == Enrollment.user_id)
+    query = query.filter(Enrollment.course_id == self.id)
+
+    format_record = lambda record: {'username': record[0], 'Full_Name': f'{record[1]} {record[2]}'}
+    return {
       'id': self.id,
       'title': self.title,
       'url': self.url,
-      'description': self.description
+      'description': self.description,
+      'students': [format_record(record) for record in query]
     }
-    return course_json
 
 class Challenge(Base):
   __tablename__ = 'challenges'

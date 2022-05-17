@@ -40,7 +40,7 @@ def create_user():
 
 # Read
 @api_v1.route('/users/', methods=['GET'])
-
+# @jwt_required()
 def read_users():
   users = query_chain(Model = User)
   users_list = []
@@ -48,23 +48,22 @@ def read_users():
     users_list.append(user.to_json())
   return jsonify(users_list)
 
-@api_v1.route('/users/<int:id>', methods=['GET'])
-def read_user(id):
-  user = query_chain(Model=User, PK_key=id).first_or_404()
-  # TESTING EMAIL SENDING
-  # send_email('pepelope8@gmail.com', 'Confirm account', 'email/confirm', user=user, token='someHash')
-  
-  t = User.find_by_username('d_arias')
-  print(t.password if t is not None else " method not working")
-
-  # END TEST
+@api_v1.route('/users/<username>', methods=['GET'])
+# @jwt_required()
+def read_user(username):
+  print('get one')
+  # user = query_chain(Model=User, PK_key=id).first_or_404()
+  user = User.find_by_username(username)
   return jsonify([user.to_json()])
 
+
+
 # Update
-@api_v1.route('/users/<int:id>', methods=["PUT", "PATCH"])
+@api_v1.route('/users/<username>', methods=["PUT", "PATCH"])
 @jwt_required()
-def update_user(id):
-  user = query_chain(Model=User, PK_key=id).first()
+def update_user(username):
+  # user = query_chain(Model=User, PK_key=id).first()
+  user = User.find_by_username(username)
   code = 200
   if request.method == "PUT":
     if user is None:
