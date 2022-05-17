@@ -36,7 +36,7 @@ def create_user():
     abort_request(message="Unable to create User", code=500, details=error.orig.diag.message_detail)
   finally:
     db.session.rollback()
-  return redirect(url_for('api_v1.read_user', id=user.id))
+  return redirect(url_for('api_v1.read_user', username=user.username))
 
 # Read
 @api_v1.route('/users/', methods=['GET'])

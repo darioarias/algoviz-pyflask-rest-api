@@ -10,18 +10,21 @@ from flask_jwt_extended import jwt_required
 @api_v1.route('/enrollments/', methods=['POST'])
 @jwt_required()
 def create_enrollment():
-  enrollment = Enrollment(
-    course_id = request.json.get('course_id', None),
-    user_id = request.json.get('user_id', None),
-  )
+  print(request.json)
+  username = request.json.get('username', None);
+  course_title = request.json.get('title', None);
+
   try:
-    db.session.add(enrollment)
-    db.session.commit()
+    # db.session.add(enrollment)
+    if(Enrollment.enroll_user(username, course_title)):
+      db.session.commit()
+    else:
+      return jsonify({"message": "enrollment already exits or user and/or title were not found", "code": 400})
   except IntegrityError as error:
-    abort_request(message='Unable to create enrollment', code=500, details=error.orig.diag.message_detail)
+    abort_request(message='Unable to create enrollment', code=500, details=error.orig.diag.message_detail if error.orig and error.orig.diag else "No user or course found")
   finally:
     db.session.rollback()
-  return redirect(url_for('api_v1.read_enrollment', id=enrollment.id))
+  return jsonify({"message": "user has been enrroleed", "code": 201})
 
 # Read
 @api_v1.route('/enrollments/', methods=['GET'])
@@ -31,7 +34,6 @@ def read_enrollments():
   for enrollment in enrollments:
     enrollments_list.append(enrollment.to_json())
   return jsonify(enrollments_list)
-
 
 @api_v1.route('/enrollments/<int:id>', methods=['GET'])
 def read_enrollment(id):

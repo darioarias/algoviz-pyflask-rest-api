@@ -64,8 +64,6 @@ class User(Base):
     except:
       return False
 
-
-  
   def to_json(self):
     query = db.session.query(Course.title, Enrollment.start_date)
     query = query.filter(User.id == Enrollment.user_id)
@@ -90,6 +88,10 @@ class User(Base):
 
 class Course(Base):
   __tablename__ = 'courses'
+
+  def find_by_title(title):
+    return db.session.query(Course).filter_by(title=tile).first()
+
   def to_json(self):
     query = db.session.query(User.username, User.first_name, User.last_name).filter(User.id == Enrollment.user_id)
     query = query.filter(Enrollment.course_id == self.id)
@@ -131,6 +133,21 @@ class Attempt(Base):
 class Enrollment(Base):
   __tablename__ = 'enrollments'
 
+  @staticmethod
+  def enroll_user(username, title):
+    user = db.session.query(User).filter_by(username=username).first();
+    course = db.session.query(Course).filter_by(title=title).first();
+    print('user_id', user.id, 'course_id', course.id)
+    if (user is None or course is None):
+      return False;
+    
+    enrolment = db.session.query(Enrollment).filter(Enrollment.user_id==user.id).filter(Enrollment.course_id==course.id).first();
+    if enrolment is not None:
+      return False
+
+    db.session.add(Enrollment(course_id=course.id, user_id=user.id))
+    return True
+  
   def to_json(self):
     return {
       'id': self.id,
