@@ -4,6 +4,7 @@ from sqlalchemy import create_engine, false
 from flask import url_for, current_app
 from passlib.hash import pbkdf2_sha256 as sha256
 from app import db
+from datetime import datetime
 import os
 
 Base = automap_base()
@@ -65,12 +66,20 @@ class User(Base):
       return False
 
   def to_json(self):
-    query = db.session.query(Course.title, Enrollment.start_date)
-    query = query.filter(User.id == Enrollment.user_id)
-    query = query.filter(Enrollment.course_id == Course.id)
-    query = query.filter(User.id == self.id)
+    courses = db.session.query(Course.title, Enrollment.start_date)
+    courses = courses.filter(User.id == Enrollment.user_id)
+    courses = courses.filter(Enrollment.course_id == Course.id)
+    courses = courses.filter(User.id == self.id)
 
-    format_record = lambda record : {'title': record[0], 'start_date': record[1]}
+    challenges = db.session.query(Challenge.title, Challenge.url, Challenge.level)
+    challenges = challenges.filter(Attempt.user_id == self.id)
+    challenges = challenges.filter(Challenge.id == Attempt.challenge_id)
+
+    format_course = lambda record : {'title': record[0], 'start_date': record[1]}
+    format_challenge = lambda record : {'title': record[0], 'url': record[1], 'level': record[2]}
+
+    for record in challenges:
+      print(record)
 
     return {
       "id": self.id,
@@ -83,7 +92,8 @@ class User(Base):
       'last_seen': self.last_seen,
       'verified': self.verified,
       'url': url_for('api_v1.read_user', username=self.username, _external=True),  #[record for record in db.session.query(self).join(Enrollment)]
-      'courses': [format_record(record) for record in query],
+      'courses': [format_course(record) for record in courses],
+      'challenges': [format_challenge(record) for record in challenges]
     }
 
 class Course(Base):
@@ -108,17 +118,42 @@ class Course(Base):
 class Challenge(Base):
   __tablename__ = 'challenges'
 
+  @staticmethod
+  def ralated_to_course(course_id):
+    challenges = db.session.query(Challenge)
+    challenges = challenges.filter(Challenge.course_id == course_id).order_by(Challenge.level.asc())
+    # .filter(Challenge.course_id == course_id).order_by(Challenge.level.asc()).all()
+    return challenges
+
   def to_json(self):
     challenge_json = {
       'id': self.id,
       'title': self.title,
       'course_id': self.course_id,
-      'description': self.description
+      'url': self.url,
+      'level': self.level
     }
     return challenge_json
 
 class Attempt(Base):
   __tablename__ = 'attempts'
+  
+  @staticmethod
+  def update_attempt(username, challenge_id):
+    user = User.find_by_username(username);
+    challenge = db.session.query(Challenge).filter(Challenge.id==challenge_id)
+    if not user or not challenge:
+      return False
+    
+    attempt = db.session.query(Attempt).filter(Attempt.user_id == user.id).filter(Attempt.challenge_id == challenge_id).first();
+    if attempt is not None:
+      attempt.last_attempt = datetime.utcnow()
+      db.session.add(attempt)
+      return True
+
+    else:
+      db.session.add(Attempt(user_id=user.id, challenge_id=challenge_id))
+      return True;
 
   def to_json(self):
     return {

@@ -10,21 +10,29 @@ from flask_jwt_extended import jwt_required
 @api_v1.route('/attempts/', methods=['POST'])
 @jwt_required()
 def create_attempt():
-  attempt = Attempt(
-    answer=request.json.get('answer', None),
-    score=request.json.get('score', None),
-    user_id=request.json.get('user_id', None),
-    challenge_id=request.json.get('challenge_id', None),
-  )
-  
+  # attempt = Attempt(
+  #   answer=request.json.get('answer', None),
+  #   score=request.json.get('score', None),
+  #   user_id=request.json.get('user_id', None),
+  #   challenge_id=request.json.get('challenge_id', None),
+  # )
+  username = request.json.get('username', None);
+  challenge_id = request.json.get('challenge_id', None);
+  print(username, challenge_id)
   try:
-    db.session.add(attempt)
-    db.session.commit()
+    # db.session.add(attempt)
+    if Attempt.update_attempt(username, challenge_id):
+      db.session.commit()
+    else: 
+      return jsonify({"message": "unable to add attempt"})
   except IntegrityError as error:
-    abort_request(message="Unable to create Attempt", code=500, details=error.orig.diag.message_detail)
+    if error.orig and error.orig.diag:
+      err = error.orig.diag.message_detail
+    else: err = ""
+    abort_request(message="Unable to create Attempt", code=500, details=err)
   finally:
     db.session.rollback()
-  return redirect(url_for('.read_attempt', id=attempt.id))
+  return jsonify({"message": "Attempt has been updated"})
 
 # Read
 @api_v1.route('/attempts/', methods=['GET'])

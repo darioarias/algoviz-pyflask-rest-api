@@ -24,12 +24,12 @@ def create_enrollment():
     abort_request(message='Unable to create enrollment', code=500, details=error.orig.diag.message_detail if error.orig and error.orig.diag else "No user or course found")
   finally:
     db.session.rollback()
-  return jsonify({"message": "user has been enrroleed", "code": 201})
+  return jsonify({"message": "user has been enrolled", "code": 201})
 
 # Read
 @api_v1.route('/enrollments/', methods=['GET'])
 def read_enrollments():
-  enrollments = query_chain(Model = Enrollment)
+  enrollments = query_chain(Model = Enrollment).order_by()
   enrollments_list = []
   for enrollment in enrollments:
     enrollments_list.append(enrollment.to_json())

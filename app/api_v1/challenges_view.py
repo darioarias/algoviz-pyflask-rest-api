@@ -6,6 +6,7 @@ from app.models import Challenge
 from flask import url_for
 from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import jwt_required
+from sqlalchemy.sql import text
 
 # Create
 @api_v1.route('/challenges/', methods=["POST"])
@@ -29,16 +30,21 @@ def create_challenges():
 # Read
 @api_v1.route('/challenges/', methods=["GET"])
 def read_challenges():
-  challenges = query_chain(Model=Challenge)
+  challenges = query_chain(Model=Challenge).order_by(Challenge.course_id).order_by(Challenge.level.asc())
   challenges_list = []
   for challenge in challenges:
     challenges_list.append(challenge.to_json())
   return jsonify(challenges_list)
 
-@api_v1.route('/challenges/<int:id>', methods=["GET"])
-def read_challenge(id):
-  challenge = query_chain(Model=Challenge, PK_key=id).first_or_404()
-  return jsonify([challenge.to_json()])
+@api_v1.route('/challenges/<int:course_id>', methods=["GET"])
+def read_challenge(course_id):
+  # print(course_id)
+  # challenge = query_chain(Model=Challenge, PK_key=id).first_or_404()
+  challenges = Challenge.ralated_to_course(course_id) # db.session.query(Challenge).filter(Challenge.course_id == course_id).order_by(Challenge.level.asc()).all()
+  # print(challenges)
+  return jsonify([record.to_json() for record in challenges])
+  # return jsonify([record.to_json() for record in challenges  challenge.to_json()])
+  # return jsonify({"MES": "working"})
 
 # Update
 @api_v1.route('/challenges/<int:id>',  methods=["PUT", "PATCH"])
